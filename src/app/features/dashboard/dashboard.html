@@ -1,0 +1,62 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <div>
+      <h1>Multi-Dimensional Sensor Streams</h1>
+      <p style="color: var(--text-muted); font-size: var(--text-sm)">
+        Movebank Wildlife Telemetry & Environmental Analytics
+      </p>
+    </div>
+    <div class="controls">
+      <select [formControl]="streamFilter">
+        <option value="all">All Telemetry Nodes</option>
+        <option value="gps">GPS Track Only</option>
+        <option value="accel">Accelerometer Only</option>
+      </select>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div style="text-align: center; padding: var(--space-8); color: var(--text-muted)">
+      Loading Movebank sensor channels...
+    </div>
+  } @else {
+    <!-- Statistical Summary Grid -->
+    <section class="stats-grid">
+      <app-stat-card
+        title="Acceleration"
+        unit="g"
+        [metrics]="accelMetrics()"
+        accentColor="var(--accent-accel)"
+      >
+      </app-stat-card>
+
+      <app-stat-card
+        title="Temperature"
+        unit="°C"
+        [metrics]="tempMetrics()"
+        accentColor="var(--accent-env)"
+      >
+      </app-stat-card>
+
+      <app-stat-card
+        title="Altitude"
+        unit="m"
+        [metrics]="altitudeMetrics()"
+        accentColor="var(--accent-gps)"
+      >
+      </app-stat-card>
+    </section>
+
+    <!-- Synchronized Visualizations Grid -->
+    <section class="visualization-grid">
+      <app-sensor-chart [data]="sensorData()"></app-sensor-chart>
+
+      <div class="map-placeholder">
+        <h3>Spatial Trajectory Cross-Highlight</h3>
+        <div class="map-view-mock">
+          <span>[Interactive GIS Map View Ready]</span>
+        </div>
+      </div>
+    </section>
+  }
+</div>
