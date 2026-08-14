@@ -1,0 +1,86 @@
+/* ================= Root Tokens =========================== */
+:root {
+  /* Color Palette - Scientific Dark / High-Contrast Theme */
+  --bg-primary: #0b0f19;
+  --bg-secondary: #131c2e;
+  --bg-surface: #1e293b;
+  --bg-surface-hover: #334155;
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-accent: #38bdf8;
+
+  --primary: #0ea5e9;
+  --primary-glow: rgba(14, 165, 233, 0.25);
+
+  --accent-gps: #10b981; /* Emerald */
+  --accent-accel: #f59e0b; /* Amber */
+  --accent-env: #8b5cf6; /* Purple */
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(56, 189, 248, 0.5);
+
+  /* Typography Scale */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+
+  /* Spacing System */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Layout */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Global Reset & Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Custom Responsive Mixins */
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == sm {
+    @media (min-width: 640px) {
+      @content;
+    }
+  } @else if $breakpoint == md {
+    @media (min-width: 768px) {
+      @content;
+    }
+  } @else if $breakpoint == lg {
+    @media (min-width: 1024px) {
+      @content;
+    }
+  } @else if $breakpoint == xl {
+    @media (min-width: 1280px) {
+      @content;
+    }
+  }
+}
