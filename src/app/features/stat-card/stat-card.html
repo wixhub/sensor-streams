@@ -1,0 +1,17 @@
+<div class="stat-card" [style.border-left]="'4px solid ' + accentColor()">
+  <div class="card-header">{{ title() }}</div>
+  <div class="card-metrics">
+    <div class="metric-item">
+      <span class="label">Min</span>
+      <span class="value">{{ metrics().min | number: '1.1-1' }} {{ unit() }}</span>
+    </div>
+    <div class="metric-item">
+      <span class="label">Avg</span>
+      <span class="value">{{ metrics().avg | number: '1.1-1' }} {{ unit() }}</span>
+    </div>
+    <div class="metric-item">
+      <span class="label">Max</span>
+      <span class="value">{{ metrics().max | number: '1.1-1' }} {{ unit() }}</span>
+    </div>
+  </div>
+</div>
