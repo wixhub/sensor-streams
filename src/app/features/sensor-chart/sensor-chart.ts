@@ -1,4 +1,13 @@
-import { Component, ElementRef, OnInit, afterNextRender, input, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  afterNextRender,
+  input,
+  viewChild,
+  effect,
+  OnDestroy,
+} from '@angular/core';
 import { Chart, registerables } from 'chart.js';
 import { SensorDataPoint } from '../../core/models/sensor.model';
 
@@ -6,25 +15,45 @@ Chart.register(...registerables);
 
 @Component({
   selector: 'app-sensor-chart',
-  imports: [],
   templateUrl: './sensor-chart.html',
   styleUrl: './sensor-chart.scss',
 })
-export class SensorChart implements OnInit {
-  data = input.required<SensorDataPoint[]>();
+export class SensorChart implements OnInit, OnDestroy {
+  // Required signal input for sensor data points
+  readonly data = input.required<SensorDataPoint[]>();
 
-  canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('chartCanvas');
-  private chartInstance: Chart | any;
+  // Required signal view child reference for the canvas element
+  readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('chartCanvas');
+
+  private chartInstance: Chart | null = null;
+  private isInitialized = false;
 
   constructor() {
+    // Modern Angular lifecycle hook for post-rendering tasks (browser-only execution)
     afterNextRender(() => {
+      this.isInitialized = true;
       this.initChart();
+    });
+
+    // Reactive effect to update chart data whenever the signal input changes
+    effect(() => {
+      const currentData = this.data();
+      if (this.isInitialized && this.chartInstance) {
+        this.updateChartData(currentData);
+      }
     });
   }
 
-  ngOnInit() {}
+  ngOnInit(): void {}
 
-  private initChart() {
+  ngOnDestroy(): void {
+    if (this.chartInstance) {
+      this.chartInstance.destroy();
+    }
+  }
+
+  // Initialize the Chart.js instance
+  private initChart(): void {
     const ctx = this.canvasRef().nativeElement.getContext('2d');
     if (!ctx) return;
 
@@ -92,5 +121,20 @@ export class SensorChart implements OnInit {
         },
       },
     });
+  }
+
+  // Update existing chart instance dynamically when new data arrives
+  private updateChartData(points: SensorDataPoint[]): void {
+    if (!this.chartInstance) return;
+
+    const labels = points.map((p) =>
+      new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    );
+
+    this.chartInstance.data.labels = labels;
+    this.chartInstance.data.datasets[0].data = points.map((p) => p.acceleration);
+    this.chartInstance.data.datasets[1].data = points.map((p) => p.temperature);
+
+    this.chartInstance.update();
   }
 }
