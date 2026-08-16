@@ -1,74 +1,51 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MovebankService } from '../../core/services/movebank.service';
-import { SensorDataPoint, MetricSummary } from '../../core/models/sensor.model';
+import { MetricSummary } from '../../core/models/sensor.model';
 import { StatCard } from '../stat-card/stat-card';
 import { SensorChart } from '../sensor-chart/sensor-chart';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, ReactiveFormsModule, StatCard, SensorChart],
+  imports: [ReactiveFormsModule, StatCard, SensorChart],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
-export class Dashboard implements OnInit {
-  private movebankService = inject(MovebankService);
+export class Dashboard {
+  private readonly movebankService = inject(MovebankService);
 
-  // Core Signals State
-  sensorData = signal<SensorDataPoint[]>([]);
-  loading = signal<boolean>(true);
+  // Convert HttpClient Observable directly into a Signal using toSignal
+  readonly sensorData = toSignal(this.movebankService.getSensorStreams(), {
+    initialValue: [],
+  });
+
+  // Derived loading state based on whether data has arrived
+  readonly loading = computed(() => this.sensorData().length === 0);
 
   // Reactive Filter Form control
-  streamFilter = new FormControl('all');
+  readonly streamFilter = new FormControl('all', { nonNullable: true });
 
-  ngOnInit() {
-    this.loadData();
-  }
-
-  private loadData() {
-    this.movebankService.getSensorStreams().subscribe({
-      next: (data) => {
-        this.sensorData.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-      },
-    });
+  // Helper function to calculate min, max, and average metrics
+  private calculateMetrics(values: number[]): MetricSummary {
+    if (!values.length) return { min: 0, max: 0, avg: 0 };
+    return {
+      min: Math.min(...values),
+      max: Math.max(...values),
+      avg: values.reduce((a, b) => a + b, 0) / values.length,
+    };
   }
 
   // Computed Statistical Summaries
-  accelMetrics = computed<MetricSummary>(() => {
-    const data = this.sensorData();
-    if (!data.length) return { min: 0, max: 0, avg: 0 };
-    const values = data.map((d) => d.acceleration);
-    return {
-      min: Math.min(...values),
-      max: Math.max(...values),
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
-    };
-  });
+  readonly accelMetrics = computed<MetricSummary>(() =>
+    this.calculateMetrics(this.sensorData().map((d) => d.acceleration)),
+  );
 
-  tempMetrics = computed<MetricSummary>(() => {
-    const data = this.sensorData();
-    if (!data.length) return { min: 0, max: 0, avg: 0 };
-    const values = data.map((d) => d.temperature);
-    return {
-      min: Math.min(...values),
-      max: Math.max(...values),
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
-    };
-  });
+  readonly tempMetrics = computed<MetricSummary>(() =>
+    this.calculateMetrics(this.sensorData().map((d) => d.temperature)),
+  );
 
-  altitudeMetrics = computed<MetricSummary>(() => {
-    const data = this.sensorData();
-    if (!data.length) return { min: 0, max: 0, avg: 0 };
-    const values = data.map((d) => d.altitude);
-    return {
-      min: Math.min(...values),
-      max: Math.max(...values),
-      avg: values.reduce((a, b) => a + b, 0) / values.length,
-    };
-  });
+  readonly altitudeMetrics = computed<MetricSummary>(() =>
+    this.calculateMetrics(this.sensorData().map((d) => d.altitude)),
+  );
 }
