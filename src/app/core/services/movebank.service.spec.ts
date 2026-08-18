@@ -10,62 +10,42 @@ describe('MovebankService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        MovebankService,
-        provideHttpClient(),
-        provideHttpClientTesting(), // Setup for mocking HttpClient requests
-      ],
+      providers: [MovebankService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(MovebankService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
-  // Ensure no outstanding requests remain after each test
   afterEach(() => {
+    // Verify that no unmatched HTTP requests are left pending
     httpMock.verify();
   });
 
-  // Test 1: Verify the service is created
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
 
-  // Test 2: Verify getSensorStreams returns the expected data
-  it('should fetch sensor streams successfully', () => {
-    const mockData: SensorDataPoint[] = [
-      {
-        timestamp: '2026-08-16T17:30:00Z',
-        latitude: 47.65,
-        longitude: 9.47,
-        acceleration: 1.2,
-        temperature: 22.5,
-        altitude: 400,
-      },
-    ];
-
-    service.getSensorStreams().subscribe((data) => {
-      expect(data).toEqual(mockData);
-      expect(data.length).toBe(1);
-    });
-
-    // Check that the request was made to the correct URL and method
+  it('should fetch sensor streams successfully using httpResource', () => {
+    // Expect the automatic HTTP request triggered by the resource on initialization
     const req = httpMock.expectOne('data/sensor-streams.json');
     expect(req.request.method).toBe('GET');
 
-    // Respond with the mock data
-    req.flush(mockData);
-  });
-
-  // Test 3: Handle HTTP error scenarios
-  it('should handle errors when fetching data fails', () => {
-    service.getSensorStreams().subscribe({
-      error: (error) => {
-        expect(error.status).toBe(404);
+    // Mock response payload matching SensorDataPoint[] structure
+    const mockSensorData: SensorDataPoint[] = [
+      {
+        timestamp: new Date().toISOString(),
+        latitude: 47.6062,
+        longitude: -122.3321,
+        acceleration: 1.2,
+        temperature: 22.5,
+        altitude: 150,
       },
-    });
+    ];
 
-    const req = httpMock.expectOne('data/sensor-streams.json');
-    req.flush('Failed to fetch', { status: 404, statusText: 'Not Found' });
+    req.flush(mockSensorData);
+
+    // Verify that the resource successfully populates its value signal
+    expect(service.sensorStreamsResource.value()).toEqual(mockSensorData);
   });
 });

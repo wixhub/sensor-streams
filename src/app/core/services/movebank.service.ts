@@ -1,15 +1,14 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Service } from '@angular/core';
+import { httpResource } from '@angular/common/http';
 import { SensorDataPoint } from '../models/sensor.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class MovebankService {
-  private http = inject(HttpClient);
-
-  getSensorStreams(): Observable<SensorDataPoint[]> {
-    return this.http.get<SensorDataPoint[]>('data/sensor-streams.json');
-  }
+  // Declarative signal-based resource replacing traditional Observable HTTP calls
+  public readonly sensorStreamsResource = httpResource<SensorDataPoint[]>(
+    () => 'data/sensor-streams.json',
+    {
+      defaultValue: [],
+    },
+  );
 }
