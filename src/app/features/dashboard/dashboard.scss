@@ -1,4 +1,4 @@
-@import '../../../styles.scss';
+@use '../../../styles/mixins' as *;
 
 .dashboard-container {
   max-width: 1400px;

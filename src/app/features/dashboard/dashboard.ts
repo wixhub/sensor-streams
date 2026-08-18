@@ -1,5 +1,4 @@
 import { Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MovebankService } from '../../core/services/movebank.service';
 import { MetricSummary } from '../../core/models/sensor.model';
@@ -15,13 +14,11 @@ import { SensorChart } from '../sensor-chart/sensor-chart';
 export class Dashboard {
   private readonly movebankService = inject(MovebankService);
 
-  // Convert HttpClient Observable directly into a Signal using toSignal
-  readonly sensorData = toSignal(this.movebankService.getSensorStreams(), {
-    initialValue: [],
-  });
+  // Access sensor data directly from the httpResource value signal
+  readonly sensorData = computed(() => this.movebankService.sensorStreamsResource.value() ?? []);
 
-  // Derived loading state based on whether data has arrived
-  readonly loading = computed(() => this.sensorData().length === 0);
+  // Derived loading state based on the resource loading status
+  readonly loading = computed(() => this.movebankService.sensorStreamsResource.isLoading());
 
   // Reactive Filter Form control
   readonly streamFilter = new FormControl('all', { nonNullable: true });
