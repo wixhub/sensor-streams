@@ -2,6 +2,8 @@
 
 A production-grade scientific dashboard designed for visualizing complex multi-dimensional animal tracking and environmental telemetry streams sourced from **Movebank**. Built using **Angular 22** featuring native Signals, stable Zoneless architecture, and modern reactive forms.
 
+![Multi-Dimensional Sensor Streams Dashboard](image.png)
+
 ## 🚀 Live Demo
 
 🔗 **[View Live Application on Cloudflare Pages](https://sensor-streams.pages.dev)**
