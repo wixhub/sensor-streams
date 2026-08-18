@@ -1,4 +1,5 @@
 <div class="dashboard-container">
+  <!-- Dashboard Header -->
   <header class="dashboard-header">
     <div>
       <h1>Multi-Dimensional Sensor Streams</h1>
@@ -6,7 +7,26 @@
         Movebank Wildlife Telemetry & Environmental Analytics
       </p>
     </div>
+
     <div class="controls">
+      <div class="study-meta-badge">
+        <span class="study-badge">ID: {{ movebankService.studyId() }}</span>
+        <span class="stream-label">Active Stream: Movebank Wildlife Telemetry</span>
+      </div>
+
+      <div class="study-input-container">
+        <label class="input-hint">Load Custom Study ID</label>
+        <div class="study-input-group">
+          <input
+            type="text"
+            [formControl]="studyIdInput"
+            placeholder="e.g. 2911040"
+            (keyup.enter)="loadCustomStudy()"
+          />
+          <button type="button" (click)="loadCustomStudy()">Load</button>
+        </div>
+      </div>
+
       <select [formControl]="streamFilter">
         <option value="all">All Telemetry Nodes</option>
         <option value="gps">GPS Track Only</option>
@@ -15,46 +35,87 @@
     </div>
   </header>
 
+  <!-- Inline Error Banner with Close Button -->
+  @if (errorMessage()) {
+    <div class="error-banner">
+      <div class="error-content">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+      <button type="button" class="close-btn" (click)="dismissError()" title="Dismiss">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- Conditional Loading State -->
   @if (loading()) {
     <div style="text-align: center; padding: var(--space-8); color: var(--text-muted)">
       Loading Movebank sensor channels...
     </div>
   } @else {
-    <!-- Statistical Summary Grid -->
     <section class="stats-grid">
       <app-stat-card
         title="Acceleration"
         unit="g"
         [metrics]="accelMetrics()"
         accentColor="var(--accent-accel)"
-      >
-      </app-stat-card>
-
+      ></app-stat-card>
       <app-stat-card
         title="Temperature"
         unit="°C"
         [metrics]="tempMetrics()"
         accentColor="var(--accent-env)"
-      >
-      </app-stat-card>
-
+      ></app-stat-card>
       <app-stat-card
         title="Altitude"
         unit="m"
         [metrics]="altitudeMetrics()"
         accentColor="var(--accent-gps)"
-      >
-      </app-stat-card>
+      ></app-stat-card>
     </section>
 
-    <!-- Synchronized Visualizations Grid -->
     <section class="visualization-grid">
-      <app-sensor-chart [data]="sensorData()"></app-sensor-chart>
+      <div class="chart-card">
+        <app-sensor-chart [data]="sensorData()"></app-sensor-chart>
+      </div>
 
-      <div class="map-placeholder">
-        <h3>Spatial Trajectory Cross-Highlight</h3>
-        <div class="map-view-mock">
-          <span>[Interactive GIS Map View Ready]</span>
+      <div class="trajectory-card">
+        <h3>Spatial Trajectory Cross-Highlight ({{ sensorData().length }} active)</h3>
+        <div class="trajectory-list">
+          @for (point of sensorData(); track $index) {
+            <div class="trajectory-item">
+              <span class="time">{{ point.timestamp | slice: 11 : 19 }}</span>
+              <span class="coords"
+                >Lat: {{ point.latitude.toFixed(3) }}, Lon: {{ point.longitude.toFixed(3) }}</span
+              >
+            </div>
+          } @empty {
+            <div style="color: var(--text-muted); text-align: center; padding: var(--space-4)">
+              No telemetry nodes available for this study
+            </div>
+          }
         </div>
       </div>
     </section>

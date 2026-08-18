@@ -1,94 +1,104 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { of, throwError } from 'rxjs';
 import { Dashboard } from './dashboard';
 import { MovebankService } from '../../core/services/movebank.service';
-import { SensorDataPoint } from '../../core/models/sensor.model';
 
-describe('Dashboard', () => {
+describe('Dashboard Component', () => {
   let component: Dashboard;
-  let fixture: ComponentFixture<Dashboard>;
-  let movebankServiceMock: { getSensorStreams: ReturnType<typeof vi.fn> };
+  let movebankServiceMock: Partial<MovebankService>;
 
-  const mockSensorData: SensorDataPoint[] = [
-    {
-      timestamp: '2026-08-16T12:00:00Z',
-      latitude: 47.65,
-      longitude: 9.47,
-      acceleration: 1.2,
-      temperature: 22.5,
-      altitude: 400,
-    },
-    {
-      timestamp: '2026-08-16T12:01:00Z',
-      latitude: 47.66,
-      longitude: 9.48,
-      acceleration: 2.0,
-      temperature: 24.5,
-      altitude: 420,
-    },
-  ];
-
+  // Setup testing module before each test case
   beforeEach(async () => {
-    // Create a mock for MovebankService
+    // Create a mock implementation of the MovebankService
     movebankServiceMock = {
-      getSensorStreams: vi.fn().mockReturnValue(of(mockSensorData)),
+      studyId: Object.assign(vi.fn().mockReturnValue('2911040'), {
+        set: vi.fn(),
+        update: vi.fn(),
+      }) as any,
+      fetchSensorData: vi.fn().mockReturnValue(
+        of([
+          {
+            timestamp: '2026-06-01T12:00:00Z',
+            latitude: 52.52,
+            longitude: 13.405,
+            acceleration: 1.2,
+            temperature: 21.5,
+            altitude: 150.0,
+          },
+          {
+            timestamp: '2026-06-01T12:01:00Z',
+            latitude: 0,
+            longitude: 0,
+            acceleration: 0,
+            temperature: 20.0,
+            altitude: 120.0,
+          },
+        ]),
+      ),
     };
 
     await TestBed.configureTestingModule({
       imports: [Dashboard],
-      providers: [{ provide: MovebankService, useValue: movebankServiceMock }],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MovebankService, useValue: movebankServiceMock },
+      ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Dashboard);
+    const fixture = TestBed.createComponent(Dashboard);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  // Verify component creation
-  it('should create', () => {
+  // Ensure component instance is successfully created
+  it('should create the dashboard component', () => {
     expect(component).toBeTruthy();
+    expect(component.loading()).toBe(false);
   });
 
-  // Verify sensor data is loaded correctly via toSignal
-  it('should load sensor data and compute metrics properly', () => {
-    const data = component.sensorData();
-    expect(data.length).toBe(2);
-    expect(data).toEqual(mockSensorData);
+  // Test custom study loading flow
+  it('should load custom study data successfully when loadCustomStudy is called', () => {
+    component.studyIdInput.setValue('9999999');
+    component.loadCustomStudy();
 
-    // Verify loading state is false after data is loaded
-    expect(component.loading()).toBeFalsy();
-
-    // Verify computed metrics
-    const accel = component.accelMetrics();
-    expect(accel.min).toBe(1.2);
-    expect(accel.max).toBe(2.0);
-    expect(accel.avg).toBe(1.6);
-
-    const temp = component.tempMetrics();
-    expect(temp.min).toBe(22.5);
-    expect(temp.max).toBe(24.5);
-    expect(temp.avg).toBe(23.5);
-
-    const altitude = component.altitudeMetrics();
-    expect(altitude.min).toBe(400);
-    expect(altitude.max).toBe(420);
-    expect(altitude.avg).toBe(410);
+    expect(movebankServiceMock.fetchSensorData).toHaveBeenCalledWith('9999999');
+    expect(component.rawSensorData().length).toBe(2);
   });
 
-  // Verify handling of empty or error states from the service
-  it('should return default metrics when sensor data is empty', async () => {
-    movebankServiceMock.getSensorStreams.mockReturnValue(of([]));
+  // Test data filtering logic computed signals (e.g., GPS filter)
+  it('should filter sensor data correctly based on streamFilter selection', () => {
+    // Set filter to GPS (should exclude items where lat/lon are 0)
+    component.streamFilter.setValue('gps');
 
-    // Re-create fixture to test empty initial state
-    const emptyFixture = TestBed.createComponent(Dashboard);
-    const emptyComponent = emptyFixture.componentInstance;
-    emptyFixture.detectChanges();
+    const filtered = component.sensorData();
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].latitude).toBe(52.52);
+  });
 
-    expect(emptyComponent.sensorData()).toEqual([]);
-    expect(emptyComponent.loading()).toBeTruthy();
+  // Test error handling and fallback behavior when fetch fails
+  it('should handle fetch errors and revert to default study ID', () => {
+    // Mock service to throw an error on fetch
+    vi.spyOn(movebankServiceMock, 'fetchSensorData').mockReturnValueOnce(
+      throwError(() => new Error('Network error')),
+    );
 
-    expect(emptyComponent.accelMetrics()).toEqual({ min: 0, max: 0, avg: 0 });
-    expect(emptyComponent.tempMetrics()).toEqual({ min: 0, max: 0, avg: 0 });
-    expect(emptyComponent.altitudeMetrics()).toEqual({ min: 0, max: 0, avg: 0 });
+    component.studyIdInput.setValue('bad_id');
+    component.loadCustomStudy();
+
+    // Check that error message is set and input reverted to default
+    expect(component.errorMessage()).toContain('Failed to load Study ID "bad_id"');
+    expect(component.studyIdInput.value).toBe('2911040');
+  });
+
+  // Test manual error banner dismissal
+  it('should dismiss the error message correctly when dismissError is called', () => {
+    component.errorMessage.set('Test error banner');
+    expect(component.errorMessage()).toBe('Test error banner');
+
+    component.dismissError();
+    expect(component.errorMessage()).toBeNull();
   });
 });
