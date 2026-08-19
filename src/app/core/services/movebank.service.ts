@@ -1,6 +1,7 @@
 import { Service, signal, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, map, catchError, throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { SensorDataPoint } from '../models/sensor.model';
 
 @Service()
@@ -11,10 +12,12 @@ export class MovebankService {
   public readonly studyId = signal('2911040');
 
   /**
-   * Fetches sensor telemetry data from Movebank proxy for a specific study ID.
-   * Propagates errors so the component can display a proper UI error banner.
+   * Fetches sensor telemetry data with a dynamic row limit (up to 1000).
    */
-  public fetchSensorData(studyId: string): Observable<SensorDataPoint[] | null> {
+  public fetchSensorData(
+    studyId: string,
+    limit: number = 1000,
+  ): Observable<SensorDataPoint[] | null> {
     let params = new HttpParams().set('entity_type', 'event').set('i_can_see_data', 'true');
 
     if (studyId?.trim()) {
@@ -38,7 +41,9 @@ export class MovebankService {
         const headers = lines[0].split(delimiter).map((h) => h.replace(/["']/g, '').trim());
 
         const dataPoints: SensorDataPoint[] = [];
-        const rowsToProcess = lines.slice(1, 1001);
+        // Apply user-selected limit, capped at a maximum of 1000 rows
+        const safeLimit = Math.min(Math.max(1, limit), 1000);
+        const rowsToProcess = lines.slice(1, safeLimit + 1);
 
         for (let i = 0; i < rowsToProcess.length; i++) {
           const cols = rowsToProcess[i].split(delimiter);
@@ -74,7 +79,6 @@ export class MovebankService {
       }),
       catchError((error: unknown) => {
         console.error('Movebank fetch error:', error);
-        // Return an Observable error so the component's subscribe error handler catches it
         return throwError(() => error);
       }),
     );
