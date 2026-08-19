@@ -14,59 +14,50 @@ import { SlicePipe } from '@angular/common';
 })
 export class Dashboard {
   readonly movebankService = inject(MovebankService);
-  private readonly cd = inject(ChangeDetectorRef); // Inject change detector for reliable UI updates
+  private readonly cd = inject(ChangeDetectorRef);
 
   private readonly DEFAULT_STUDY_ID = '2911040';
 
-  // State signals for data, loading, and the error banner
+  // State signals
   readonly rawSensorData = signal<any[]>([]);
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
   private errorTimeoutId: any = null;
 
-  // Form controls
+  // Form controls including points limit selector (max 1000)
   readonly studyIdInput = new FormControl(this.DEFAULT_STUDY_ID, { nonNullable: true });
   readonly streamFilter = new FormControl('all', { nonNullable: true });
+  readonly pointsLimit = new FormControl('250', { nonNullable: true }); // Default limit option
 
   private readonly filterValue = toSignal(this.streamFilter.valueChanges, {
     initialValue: this.streamFilter.value,
   });
 
   constructor() {
-    // Clear the error message immediately if the user starts typing a new ID
     this.studyIdInput.valueChanges.subscribe(() => {
       if (this.errorMessage()) {
         this.dismissError();
       }
     });
 
-    // Load initial default study data on component load
     this.loadStudyData(this.DEFAULT_STUDY_ID);
   }
 
-  /**
-   * Displays the error banner, forces change detection, and keeps it visible for 12 seconds.
-   */
   private showAutoClosingError(message: string): void {
     if (this.errorTimeoutId) {
       clearTimeout(this.errorTimeoutId);
     }
 
-    // Set the error message and explicitly trigger change detection for the UI
     this.errorMessage.set(message);
     this.cd.markForCheck();
 
-    // Auto-hide the error banner after 12 seconds
     this.errorTimeoutId = setTimeout(() => {
       this.errorMessage.set(null);
       this.cd.markForCheck();
     }, 12000);
   }
 
-  /**
-   * Manually dismisses the error banner.
-   */
   public dismissError(): void {
     if (this.errorTimeoutId) {
       clearTimeout(this.errorTimeoutId);
@@ -77,19 +68,24 @@ export class Dashboard {
   }
 
   /**
-   * Loads study data from the service.
+   * Loads study data passing the user-selected points limit.
    */
-  private loadStudyData(id: string): void {
+  private loadStudyData(id: string, isFallback = false): void {
     this.loading.set(true);
     this.cd.markForCheck();
 
-    this.movebankService.fetchSensorData(id).subscribe({
+    const limit = parseInt(this.pointsLimit.value, 10) || 250;
+
+    this.movebankService.fetchSensorData(id, limit).subscribe({
       next: (data) => {
         this.loading.set(false);
         if (data && data.length > 0) {
           this.movebankService.studyId.set(id);
           this.rawSensorData.set(data);
           this.cd.markForCheck();
+          if (!isFallback) {
+            this.dismissError();
+          }
         } else {
           this.handleFetchError(id, 'No telemetry data returned for this study ID.');
         }
@@ -101,40 +97,40 @@ export class Dashboard {
     });
   }
 
-  /**
-   * Helper to trigger the error banner and fallback to the default study ID safely.
-   */
   private handleFetchError(failedId: string, reason: string): void {
-    // Show the persistent error message in the UI for 12 seconds
     this.showAutoClosingError(
       `Failed to load Study ID "${failedId}". ${reason} Reverting to default (${this.DEFAULT_STUDY_ID}).`,
     );
 
-    // Update input field back to default
     this.studyIdInput.setValue(this.DEFAULT_STUDY_ID, { emitEvent: false });
 
-    // Load default data only if we aren't already on it
     if (this.movebankService.studyId() !== this.DEFAULT_STUDY_ID) {
-      this.movebankService.fetchSensorData(this.DEFAULT_STUDY_ID).subscribe((defaultData) => {
-        if (defaultData) {
-          this.movebankService.studyId.set(this.DEFAULT_STUDY_ID);
-          this.rawSensorData.set(defaultData);
-          this.cd.markForCheck();
-        }
-      });
+      const limit = parseInt(this.pointsLimit.value, 10) || 250;
+      this.movebankService
+        .fetchSensorData(this.DEFAULT_STUDY_ID, limit)
+        .subscribe((defaultData) => {
+          if (defaultData) {
+            this.movebankService.studyId.set(this.DEFAULT_STUDY_ID);
+            this.rawSensorData.set(defaultData);
+            this.cd.markForCheck();
+          }
+        });
     }
   }
 
-  /**
-   * Triggered when the user clicks "Load" or presses Enter.
-   */
   public loadCustomStudy(): void {
     const targetId = this.studyIdInput.value.trim();
     if (!targetId) return;
     this.loadStudyData(targetId);
   }
 
-  // Filtered sensor data based on the dropdown selection
+  // Triggered when user changes the points limit dropdown
+  public onLimitChange(): void {
+    const currentId = this.movebankService.studyId();
+    this.loadStudyData(currentId);
+  }
+
+  // Filtered sensor data
   readonly sensorData = computed(() => {
     const data = this.rawSensorData();
     const filter = this.filterValue();
@@ -148,7 +144,7 @@ export class Dashboard {
     return data;
   });
 
-  // Computed metrics for acceleration stat card
+  // Computed metrics
   readonly accelMetrics = computed(() => {
     const data = this.sensorData();
     if (data.length === 0) return { current: 0, min: 0, max: 0, avg: 0 };
@@ -162,7 +158,6 @@ export class Dashboard {
     };
   });
 
-  // Computed metrics for temperature stat card
   readonly tempMetrics = computed(() => {
     const data = this.sensorData();
     if (data.length === 0) return { current: 0, min: 0, max: 0, avg: 0 };
@@ -176,7 +171,6 @@ export class Dashboard {
     };
   });
 
-  // Computed metrics for altitude stat card
   readonly altitudeMetrics = computed(() => {
     const data = this.sensorData();
     if (data.length === 0) return { current: 0, min: 0, max: 0, avg: 0 };

@@ -1,41 +1,54 @@
 <div class="dashboard-container">
-  <!-- Dashboard Header -->
-  <header class="dashboard-header">
-    <div>
-      <h1>Multi-Dimensional Sensor Streams</h1>
-      <p style="color: var(--text-muted); font-size: var(--text-sm)">
-        Movebank Wildlife Telemetry & Environmental Analytics
-      </p>
-    </div>
-
-    <div class="controls">
-      <div class="study-meta-badge">
-        <span class="study-badge">ID: {{ movebankService.studyId() }}</span>
-        <span class="stream-label">Active Stream: Movebank Wildlife Telemetry</span>
-      </div>
-
-      <div class="study-input-container">
-        <label class="input-hint">Load Custom Study ID</label>
-        <div class="study-input-group">
-          <input
-            type="text"
-            [formControl]="studyIdInput"
-            placeholder="e.g. 2911040"
-            (keyup.enter)="loadCustomStudy()"
-          />
-          <button type="button" (click)="loadCustomStudy()">Load</button>
-        </div>
-      </div>
-
-      <select [formControl]="streamFilter">
-        <option value="all">All Telemetry Nodes</option>
-        <option value="gps">GPS Track Only</option>
-        <option value="accel">Accelerometer Only</option>
-      </select>
-    </div>
+  <!-- Clean Header Section without border/background frame -->
+  <header class="dashboard-header-clean">
+    <h1>Multi-Dimensional Sensor Streams</h1>
+    <p style="color: var(--text-muted); font-size: var(--text-sm)">
+      Movebank Wildlife Telemetry & Environmental Analytics (Active Study ID:
+      <strong style="color: var(--text-main)">{{ movebankService.studyId() }}</strong
+      >)
+    </p>
   </header>
 
-  <!-- Inline Error Banner with Close Button -->
+  <!-- Interactive Controls Section placed below the header -->
+  <section class="controls-section">
+    <!-- Load Custom Study ID -->
+    <div class="control-group">
+      <label class="input-hint">Load Custom Study ID</label>
+      <div class="study-input-group">
+        <input
+          type="text"
+          [formControl]="studyIdInput"
+          placeholder="e.g. 2911040"
+          (keyup.enter)="loadCustomStudy()"
+        />
+        <button type="button" (click)="loadCustomStudy()">Load</button>
+      </div>
+    </div>
+
+    <!-- Points Limit Selector (Max 1000) -->
+    <div class="control-group">
+      <label class="input-hint">Points Limit (Max 1000)</label>
+      <select [formControl]="pointsLimit" (change)="onLimitChange()">
+        <option value="50">50 Points</option>
+        <option value="100">100 Points</option>
+        <option value="250">250 Points</option>
+        <option value="500">500 Points</option>
+        <option value="1000">1000 Points (Max)</option>
+      </select>
+    </div>
+
+    <!-- Stream Filter with a clear user explanation -->
+    <div class="control-group">
+      <label class="input-hint">Filter Telemetry Data</label>
+      <select [formControl]="streamFilter">
+        <option value="all">All Telemetry Nodes (GPS & Sensors)</option>
+        <option value="gps">GPS Track Only (Spatial coordinates)</option>
+        <option value="accel">Accelerometer Only (Movement data)</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Inline Error Banner -->
   @if (errorMessage()) {
     <div class="error-banner">
       <div class="error-content">
@@ -75,6 +88,7 @@
       Loading Movebank sensor channels...
     </div>
   } @else {
+    <!-- Statistics Grid Section -->
     <section class="stats-grid">
       <app-stat-card
         title="Acceleration"
@@ -96,6 +110,7 @@
       ></app-stat-card>
     </section>
 
+    <!-- Visualizations and Trajectory Log Section -->
     <section class="visualization-grid">
       <div class="chart-card">
         <app-sensor-chart [data]="sensorData()"></app-sensor-chart>

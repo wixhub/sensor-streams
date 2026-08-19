@@ -1,5 +1,6 @@
 @use '../../../styles/mixins' as *;
 
+// Dashboard Container Layout
 .dashboard-container {
   max-width: 1400px;
   margin: 0 auto;
@@ -9,7 +10,111 @@
     padding: var(--space-8);
   }
 
-  /* Inline Error Banner Styling */
+  // Clean Header Section (No background frame)
+  .dashboard-header-clean {
+    margin-bottom: var(--space-4);
+
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: var(--space-1);
+
+      @include respond-to(md) {
+        font-size: var(--text-3xl);
+      }
+    }
+  }
+
+  // Interactive Controls Panel (Placed below the header)
+  .controls-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-6);
+    align-items: flex-end;
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 240px;
+
+      .input-hint {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+      }
+    }
+
+    .study-input-group {
+      display: flex;
+      gap: var(--space-2);
+
+      input {
+        background: var(--bg-primary);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: var(--space-2) var(--space-3);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        flex: 1;
+        height: 38px;
+        outline: none;
+        transition: var(--transition-smooth);
+
+        &:focus {
+          border-color: var(--border-focus);
+        }
+      }
+
+      button {
+        background: var(--bg-primary);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 0 var(--space-4);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        height: 38px;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+
+        &:hover {
+          border-color: var(--border-focus);
+          background: var(--border-color);
+        }
+      }
+    }
+
+    select {
+      background: var(--bg-primary);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 0 var(--space-3);
+      height: 38px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans);
+      font-size: var(--text-sm);
+      outline: none;
+      width: 100%;
+      transition: var(--transition-smooth);
+
+      &:focus {
+        border-color: var(--border-focus);
+      }
+    }
+  }
+
+  // Inline Error Banner Styling with Fade-in Animation
   .error-banner {
     display: flex;
     align-items: center;
@@ -63,130 +168,8 @@
       transform: translateY(0);
     }
   }
-  .dashboard-header {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    margin-bottom: var(--space-6);
 
-    @include respond-to(lg) {
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    h1 {
-      font-size: var(--text-2xl);
-      font-weight: 700;
-      color: var(--text-main);
-
-      @include respond-to(md) {
-        font-size: var(--text-3xl);
-      }
-    }
-
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-3);
-      align-items: flex-end;
-
-      .study-meta-badge {
-        display: flex;
-        flex-direction: column;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        padding: var(--space-2) var(--space-3);
-        border-radius: var(--radius-sm);
-        height: 52px;
-        justify-content: center;
-
-        .study-badge {
-          font-family: var(--font-mono);
-          font-size: 0.8rem;
-          color: var(--text-main);
-          font-weight: 600;
-        }
-
-        .stream-label {
-          font-size: 0.7rem;
-          color: var(--text-muted);
-        }
-      }
-
-      .study-input-container {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-
-        .input-hint {
-          font-size: 0.7rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .study-input-group {
-          display: flex;
-          gap: var(--space-2);
-
-          input {
-            background: var(--bg-secondary);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: var(--space-2) var(--space-3);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-sans);
-            font-size: var(--text-sm);
-            width: 130px;
-            height: 38px;
-            outline: none;
-            transition: var(--transition-smooth);
-
-            &:focus {
-              border-color: var(--border-focus);
-            }
-          }
-
-          button {
-            background: var(--bg-secondary);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: var(--space-2) var(--space-3);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-sans);
-            font-size: var(--text-sm);
-            height: 38px;
-            cursor: pointer;
-            transition: var(--transition-smooth);
-
-            &:hover {
-              border-color: var(--border-focus);
-              background: var(--border-color);
-            }
-          }
-        }
-      }
-
-      select {
-        background: var(--bg-secondary);
-        color: var(--text-main);
-        border: 1px solid var(--border-color);
-        padding: 0 var(--space-4);
-        height: 38px;
-        border-radius: var(--radius-sm);
-        font-family: var(--font-sans);
-        outline: none;
-        align-self: flex-end;
-        transition: var(--transition-smooth);
-
-        &:focus {
-          border-color: var(--border-focus);
-        }
-      }
-    }
-  }
-
+  // Statistics Grid Section
   .stats-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -202,6 +185,7 @@
     }
   }
 
+  // Visualizations & Trajectory Log Grid Section
   .visualization-grid {
     display: grid;
     grid-template-columns: 1fr;

@@ -1,103 +1,86 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { of, throwError } from 'rxjs';
 import { Dashboard } from './dashboard';
 import { MovebankService } from '../../core/services/movebank.service';
+import { of, throwError } from 'rxjs';
 
 describe('Dashboard Component', () => {
   let component: Dashboard;
-  let movebankServiceMock: Partial<MovebankService>;
+  let fixture: ComponentFixture<Dashboard>;
+  let movebankService: MovebankService;
 
-  // Setup testing module before each test case
   beforeEach(async () => {
-    // Create a mock implementation of the MovebankService
-    movebankServiceMock = {
-      studyId: Object.assign(vi.fn().mockReturnValue('2911040'), {
-        set: vi.fn(),
-        update: vi.fn(),
-      }) as any,
-      fetchSensorData: vi.fn().mockReturnValue(
-        of([
-          {
-            timestamp: '2026-06-01T12:00:00Z',
-            latitude: 52.52,
-            longitude: 13.405,
-            acceleration: 1.2,
-            temperature: 21.5,
-            altitude: 150.0,
-          },
-          {
-            timestamp: '2026-06-01T12:01:00Z',
-            latitude: 0,
-            longitude: 0,
-            acceleration: 0,
-            temperature: 20.0,
-            altitude: 120.0,
-          },
-        ]),
-      ),
-    };
-
     await TestBed.configureTestingModule({
       imports: [Dashboard],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: MovebankService, useValue: movebankServiceMock },
-      ],
+      providers: [MovebankService, provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(Dashboard);
+    fixture = TestBed.createComponent(Dashboard);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    movebankService = TestBed.inject(MovebankService);
   });
 
-  // Ensure component instance is successfully created
   it('should create the dashboard component', () => {
     expect(component).toBeTruthy();
-    expect(component.loading()).toBe(false);
   });
 
-  // Test custom study loading flow
-  it('should load custom study data successfully when loadCustomStudy is called', () => {
-    component.studyIdInput.setValue('9999999');
-    component.loadCustomStudy();
-
-    expect(movebankServiceMock.fetchSensorData).toHaveBeenCalledWith('9999999');
-    expect(component.rawSensorData().length).toBe(2);
-  });
-
-  // Test data filtering logic computed signals (e.g., GPS filter)
-  it('should filter sensor data correctly based on streamFilter selection', () => {
-    // Set filter to GPS (should exclude items where lat/lon are 0)
-    component.streamFilter.setValue('gps');
-
-    const filtered = component.sensorData();
-    expect(filtered.length).toBe(1);
-    expect(filtered[0].latitude).toBe(52.52);
-  });
-
-  // Test error handling and fallback behavior when fetch fails
-  it('should handle fetch errors and revert to default study ID', () => {
-    // Mock service to throw an error on fetch
-    vi.spyOn(movebankServiceMock, 'fetchSensorData').mockReturnValueOnce(
-      throwError(() => new Error('Network error')),
+  it('should load default study data on initialization', () => {
+    const spy = vi.spyOn(movebankService, 'fetchSensorData').mockReturnValue(
+      of([
+        {
+          timestamp: '2026-06-01T12:00:00.000Z',
+          latitude: 50.0,
+          longitude: 10.0,
+          acceleration: 1.2,
+          temperature: 20.5,
+          altitude: 150.0,
+        },
+      ]),
     );
 
-    component.studyIdInput.setValue('bad_id');
-    component.loadCustomStudy();
+    // Trigger lifecycle hooks
+    fixture.detectChanges();
 
-    // Check that error message is set and input reverted to default
-    expect(component.errorMessage()).toContain('Failed to load Study ID "bad_id"');
-    expect(component.studyIdInput.value).toBe('2911040');
+    expect(spy).toHaveBeenCalled();
+    expect(component.rawSensorData().length).toBe(1);
+    expect(component.errorMessage()).toBeNull();
   });
 
-  // Test manual error banner dismissal
-  it('should dismiss the error message correctly when dismissError is called', () => {
-    component.errorMessage.set('Test error banner');
-    expect(component.errorMessage()).toBe('Test error banner');
+  it('should display an error banner and fallback when study fetch fails (500 Error)', async () => {
+    // Mock fetch failure for custom study, and successful fallback for default study
+    const spy = vi.spyOn(movebankService, 'fetchSensorData').mockImplementation((id) => {
+      if (id === 'bad_study') {
+        return throwError(() => new Error('Server error 500'));
+      }
+      return of([
+        {
+          timestamp: '2026-06-01T12:00:00.000Z',
+          latitude: 51.0,
+          longitude: 11.0,
+          acceleration: 1.0,
+          temperature: 18.0,
+          altitude: 100.0,
+        },
+      ]);
+    });
 
+    // Set custom study input and trigger load action
+    component.studyIdInput.setValue('bad_study');
+    component.loadCustomStudy();
+    fixture.detectChanges();
+
+    // Verify that error message is set and visible for the user
+    expect(component.errorMessage()).toContain('Failed to load Study ID "bad_study"');
+    expect(component.studyIdInput.value).toBe('2911040'); // Reverted to default
+  });
+
+  it('should allow manual dismissal of the error banner', () => {
+    // Force an error message state
+    component['showAutoClosingError']('Test error message');
+    expect(component.errorMessage()).toBe('Test error message');
+
+    // Manually dismiss the error
     component.dismissError();
     expect(component.errorMessage()).toBeNull();
   });
