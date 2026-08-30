@@ -5,10 +5,11 @@ import { MovebankService } from '../../core/services/movebank.service';
 import { StatCard } from '../stat-card/stat-card';
 import { SensorChart } from '../sensor-chart/sensor-chart';
 import { SlicePipe } from '@angular/common';
+import { Footer } from '../../core/layout/footer/footer';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [ReactiveFormsModule, StatCard, SensorChart, SlicePipe],
+  imports: [ReactiveFormsModule, StatCard, SensorChart, SlicePipe, Footer],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss'],
 })
