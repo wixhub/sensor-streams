@@ -2,6 +2,8 @@
 
 A production-grade scientific dashboard designed for visualizing complex multi-dimensional animal tracking and environmental telemetry streams sourced from **Movebank**. Built using **Angular 22** featuring native Signals, stable Zoneless architecture, and modern reactive forms.
 
+> **Notice:** This repository is no longer actively maintained. The frontend project has been migrated to a [NX monorepo Eco System](https://github.com/wixhub/ecosystem).
+
 ![Multi-Dimensional Sensor Streams Dashboard](image.png)
 
 ## 🚀 Live Demo
